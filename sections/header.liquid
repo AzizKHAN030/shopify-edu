@@ -30,17 +30,6 @@
 <noscript>{{ 'component-cart-notification.css' | asset_url | stylesheet_tag }}</noscript>
 <noscript>{{ 'component-cart-items.css' | asset_url | stylesheet_tag }}</noscript>
 
-{%- liquid
-  # Detect Arabic locale for RTL support
-  assign is_rtl = false
-  assign locale_code = request.locale.iso_code | downcase
-  if locale_code == 'ar'
-    assign is_rtl = true
-  elsif locale_code contains 'ar-'
-    assign is_rtl = true
-  endif
--%}
-
 <style>
   header-drawer {
     justify-self: start;
@@ -100,49 +89,6 @@
       padding-top: 0.5rem;
     }
   }
-
-  {%- if is_rtl -%}
-    /* RTL styles for Arabic header */
-    .header--rtl {
-      direction: rtl;
-    }
-    
-    .header--rtl .header__icons {
-      flex-direction: row-reverse;
-    }
-    
-    .header--rtl .header__inline-menu {
-      direction: rtl;
-    }
-    
-    .header--rtl .list-menu--inline {
-      flex-direction: row-reverse;
-    }
-    
-    .header--rtl .header__menu-item {
-      text-align: right;
-    }
-    
-    .header--rtl header-drawer {
-      margin-left: 0;
-      margin-right: -1.2rem;
-    }
-    
-    .header--rtl .header__heading-link {
-      text-align: right;
-    }
-    
-    .header--rtl .header__submenu {
-      right: auto;
-      left: 0;
-      text-align: right;
-    }
-    
-    .header--rtl .mega-menu__content {
-      right: auto;
-      left: 0;
-    }
-  {%- endif -%}
 </style>
 
 {%- style -%}
@@ -206,7 +152,7 @@
 -%}
 
 <{% if section.settings.sticky_header_type != 'none' %}sticky-header data-sticky-type="{{ section.settings.sticky_header_type }}"{% else %}div{% endif %} class="header-wrapper color-{{ section.settings.color_scheme }} gradient{% if section.settings.show_line_separator %} header-wrapper--border-bottom{% endif %}">
-  <header class="header header--{{ section.settings.logo_position }} header--mobile-{{ section.settings.mobile_logo_position }} page-width{% if section.settings.menu_type_desktop == 'drawer' %} drawer-menu{% endif %}{% if section.settings.menu != blank %} header--has-menu{% endif %}{% if has_app_block %} header--has-app{% endif %}{% if is_rtl %} header--rtl{% endif %}"{% if is_rtl %} dir="rtl"{% endif %}>
+  <header class="header header--{{ section.settings.logo_position }} header--mobile-{{ section.settings.mobile_logo_position }} page-width{% if section.settings.menu_type_desktop == 'drawer' %} drawer-menu{% endif %}{% if section.settings.menu != blank %} header--has-menu{% endif %}{% if has_app_block %} header--has-app{% endif %}">
     {%- if section.settings.menu != blank -%}
       <header-drawer data-breakpoint="{% if section.settings.menu_type_desktop == 'drawer' %}desktop{% else %}tablet{% endif %}">
         <details id="Details-menu-drawer-container" class="menu-drawer-container">
