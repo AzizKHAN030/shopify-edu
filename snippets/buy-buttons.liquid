@@ -10,6 +10,8 @@
   Usage:
   {% render 'buy-buttons', block: block, product: product, product_form_id: product_form_id, section_id: section.id, show_pickup_availability: true %}
 {% endcomment %}
+{{ 'component-out-of-stock-variants.css' | asset_url | stylesheet_tag }}
+
 <div {{ block.shopify_attributes }}>
   {%- if product != blank -%}
     {%- liquid
@@ -149,4 +151,7 @@
 
     <script src="{{ 'pickup-availability.js' | asset_url }}" defer="defer"></script>
   {%- endif -%}
+  
+  {%- comment -%} Display out of stock variants {%- endcomment -%}
+  {% render 'out-of-stock-variants', product: product %}
 </div>

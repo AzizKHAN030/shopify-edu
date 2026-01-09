@@ -29,6 +29,9 @@
 
     {% render 'meta-tags' %}
 
+    {%- comment -%} Storefront API Access Token for AJAX Registration {%- endcomment -%}
+    <meta name="shopify-storefront-api-token" content="YOUR_STOREFRONT_API_TOKEN_HERE">
+
     <script src="{{ 'constants.js' | asset_url }}" defer="defer"></script>
     <script src="{{ 'pubsub.js' | asset_url }}" defer="defer"></script>
     <script src="{{ 'global.js' | asset_url }}" defer="defer"></script>
