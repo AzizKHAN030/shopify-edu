@@ -20,6 +20,9 @@ jobs:
       - name: Deploy
         run: |
           BRANCH="${{ github.ref_name }}"
+          
+          # Replace placeholder with actual Storefront API token
+          sed -i 's/YOUR_STOREFRONT_API_TOKEN_HERE/${{ secrets.SHOPIFY_STOREFRONT_TOKEN }}/g' layout/theme.liquid
 
           if [ "$BRANCH" = "production" ]; then
             shopify theme push \
