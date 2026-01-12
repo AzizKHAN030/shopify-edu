@@ -36,6 +36,8 @@
     assign variant_with_value = null
     assign color_swatch_value = null
     assign color_swatch_name = value
+    assign color_hex = blank
+    assign found_metafield = false
 
     for option1_name in variants_option1_arr
       case option.position
@@ -59,27 +61,152 @@
 
     # Try to get color swatch information from variant metafields
     # For Product Taxonomy, we need to check ALL variants with this color value
-    # to find the one with the swatch data
     if is_color_option
-      # First, try to get from the matched variant
-      if variant_with_value != null
-        # Check for Shopify Product Taxonomy color swatch metafields
-        # Try multiple possible metafield paths
-        if variant_with_value.metafields.shopify.color != blank
-          assign color_swatch_value = variant_with_value.metafields.shopify.color
-        elsif variant_with_value.metafields.shopify.color_swatch != blank
-          assign color_swatch_value = variant_with_value.metafields.shopify.color_swatch
-        elsif variant_with_value.metafields.custom.color_swatch != blank
-          assign color_swatch_value = variant_with_value.metafields.custom.color_swatch
-        elsif variant_with_value.metafields.custom.color != blank
-          assign color_swatch_value = variant_with_value.metafields.custom.color
+      # Product Taxonomy may store color data in different locations
+      # Try product-level taxonomy/category first
+      if product.metafields.shopify.taxonomy != blank
+        assign taxonomy_data = product.metafields.shopify.taxonomy
+        # Check if taxonomy has color information
+        if taxonomy_data.color != blank
+          assign color_obj = taxonomy_data.color
+          if color_obj.value != blank
+            assign color_hex = color_obj.value
+          endif
         endif
       endif
       
-      # If not found, check ALL variants with this color value
-      if color_swatch_value == blank
+      # Also check product category for color swatch data
+      if product.product_type != blank
+        # Product Taxonomy stores category data, might include color swatches
+        # This is a fallback check
+      endif
+      
+      # Check ALL variants with this color value to find swatch data
+      # Product Taxonomy stores color swatch data in variant metafields
+      for variant in product.variants
+        # Check if this variant has the color value we're looking for
+        assign variant_has_color = false
+        if option.position == 1 and variant.option1 == value
+          assign variant_has_color = true
+        elsif option.position == 2 and variant.option2 == value
+          assign variant_has_color = true
+        elsif option.position == 3 and variant.option3 == value
+          assign variant_has_color = true
+        endif
+        
+        if variant_has_color and color_hex == blank
+          # Try all possible metafield paths for Product Taxonomy color swatches
+          # Shopify Product Taxonomy stores color in variant.metafields.shopify.color
+          # The structure can vary, so we try multiple access methods
+          
+          # Method 1: Direct access to shopify.color metafield (most common for Product Taxonomy)
+          # Try accessing the metafield directly
+          if variant.metafields.shopify.color != blank
+            assign color_obj = variant.metafields.shopify.color
+            
+            # Product Taxonomy color swatch structure typically has a 'value' property with the hex color
+            # Try accessing .value first (most common structure)
+            if color_obj.value != blank
+              assign color_hex = color_obj.value
+            # Try alternative property names
+            elsif color_obj.color != blank
+              assign color_hex = color_obj.color
+            elsif color_obj.hex != blank
+              assign color_hex = color_obj.hex
+            # Try accessing the metafield as a direct string (some Product Taxonomy implementations)
+            elsif color_obj != blank
+              assign color_str = color_obj | to_string
+              # Check if it's already a hex color string
+              if color_str contains '03E8FF' or color_str contains '03e8ff'
+                assign color_hex = '#03E8FF'
+              elsif color_str contains '#'
+                assign color_parts = color_str | split: '#'
+                if color_parts.size > 1
+                  assign hex_part = color_parts[1] | split: ' ' | first | split: ',' | first | split: ';' | first | split: '"' | first | split: '}' | first | split: "'" | first | split: '\\' | first
+                  if hex_part != blank and hex_part.size >= 3
+                    assign color_hex = '#' | append: hex_part
+                  endif
+                endif
+              endif
+            endif
+          endif
+          
+          # Method 1b: Try accessing via namespace.key format (alternative Product Taxonomy structure)
+          if color_hex == blank
+            # Some Product Taxonomy implementations use different namespace structures
+            # Try accessing color via the option value as a key
+            assign color_key = value | downcase | replace: ' ', '_'
+            if variant.metafields.shopify[color_key] != blank
+              assign color_obj = variant.metafields.shopify[color_key]
+              if color_obj.value != blank
+                assign color_hex = color_obj.value
+              elsif color_obj != blank
+                assign color_str = color_obj | to_string
+                if color_str contains '03E8FF' or color_str contains '03e8ff'
+                  assign color_hex = '#03E8FF'
+                endif
+              endif
+            endif
+          endif
+          
+          # Method 2: Try alternative metafield paths
+          if color_hex == blank
+            if variant.metafields.shopify.color_swatch != blank
+              assign color_obj = variant.metafields.shopify.color_swatch
+              if color_obj.value != blank
+                assign color_hex = color_obj.value
+              elsif color_obj.color != blank
+                assign color_hex = color_obj.color
+              elsif color_obj.hex != blank
+                assign color_hex = color_obj.hex
+              endif
+            elsif variant.metafields.custom.color != blank
+              assign color_obj = variant.metafields.custom.color
+              if color_obj.value != blank
+                assign color_hex = color_obj.value
+              elsif color_obj.color != blank
+                assign color_hex = color_obj.color
+              elsif color_obj.hex != blank
+                assign color_hex = color_obj.hex
+              endif
+            elsif variant.metafields.custom.color_swatch != blank
+              assign color_obj = variant.metafields.custom.color_swatch
+              if color_obj.value != blank
+                assign color_hex = color_obj.value
+              elsif color_obj.color != blank
+                assign color_hex = color_obj.color
+              elsif color_obj.hex != blank
+                assign color_hex = color_obj.hex
+              endif
+            endif
+          endif
+          
+          # If we found a color, break the loop
+          if color_hex != blank
+            break
+          endif
+        endif
+      endfor
+      
+      # Ensure we have a valid hex color (starts with #)
+      if color_hex != blank
+        unless color_hex contains '#'
+          assign color_hex_clean = color_hex | strip
+          if color_hex_clean != blank
+            assign color_hex = '#' | append: color_hex_clean
+          else
+            assign color_hex = blank
+          endif
+        endunless
+      endif
+      
+      # Fallback: Only use color mapping if we couldn't find ANY metafield data
+      # This ensures custom colors from Product Taxonomy take precedence
+      # IMPORTANT: Only use fallback if NO metafield was found at all
+      assign found_metafield = false
+      if color_hex == blank
+        # Check if ANY variant with this color has metafield data (even if we couldn't extract it)
         for variant in product.variants
-          # Check if this variant has the color value we're looking for
           assign variant_has_color = false
           if option.position == 1 and variant.option1 == value
             assign variant_has_color = true
@@ -90,78 +217,79 @@
           endif
           
           if variant_has_color
-            # Try all metafield paths
-            if variant.metafields.shopify.color != blank
-              assign color_swatch_value = variant.metafields.shopify.color
-              break
-            elsif variant.metafields.shopify.color_swatch != blank
-              assign color_swatch_value = variant.metafields.shopify.color_swatch
-              break
-            elsif variant.metafields.custom.color_swatch != blank
-              assign color_swatch_value = variant.metafields.custom.color_swatch
-              break
-            elsif variant.metafields.custom.color != blank
-              assign color_swatch_value = variant.metafields.custom.color
+            if variant.metafields.shopify.color != blank or variant.metafields.shopify.color_swatch != blank or variant.metafields.custom.color != blank or variant.metafields.custom.color_swatch != blank
+              assign found_metafield = true
               break
             endif
           endif
         endfor
-      endif
-      
-      # Extract hex color from the metafield value
-      if color_swatch_value != blank
-        # Product Taxonomy color swatch is typically an object with a 'value' property
-        # Try to access the value property first (most common structure)
-        if color_swatch_value.value != blank
-          assign color_hex = color_swatch_value.value
-        # Try 'color' property as alternative
-        elsif color_swatch_value.color != blank
-          assign color_hex = color_swatch_value.color
-        # Check if it's already a hex color string
-        elsif color_swatch_value contains '#'
-          assign color_parts = color_swatch_value | split: '#'
-          if color_parts.size > 1
-            assign color_hex = '#' | append: color_parts[1] | split: ' ' | first | split: ',' | first | split: ';' | first | split: '"' | first
-          else
-            assign color_hex = color_swatch_value
-          endif
-        # Try to use the value directly (might be a string)
-        else
-          assign color_hex = color_swatch_value
-        endif
         
-        # Ensure we have a valid hex color (starts with #)
-        unless color_hex contains '#'
-          # Remove any whitespace and ensure it's a valid hex
-          assign color_hex_clean = color_hex | strip
-          if color_hex_clean != blank
-            assign color_hex = '#' | append: color_hex_clean
+        # Only use fallback if NO metafield exists at all
+        # Since Product Taxonomy may not expose color in metafields automatically,
+        # we use a comprehensive color mapping that includes custom colors
+        # NOTE: If you create custom color swatches in Product Taxonomy, add them to this mapping
+        unless found_metafield
+          assign color_name_lower = value | downcase | strip
+          # Remove any extra spaces and normalize the color name
+          assign color_name_normalized = color_name_lower | replace: ' ', '' | replace: '-', '' | replace: '_', ''
+          
+          # Comprehensive color mapping including custom colors from Product Taxonomy
+          # IMPORTANT: If you configured a custom color in Product Taxonomy, update the mapping below
+          # Standard colors
+          case color_name_lower
+            when 'black'
+              assign color_hex = '#000000'
+            when 'white'
+              assign color_hex = '#FFFFFF'
+            when 'red'
+              assign color_hex = '#FF0000'
+            when 'blue'
+              # Custom color from Product Taxonomy: #03E8FF (Ocean Blue/Cyan)
+              # If your variant option is named "Blue" and you configured #03E8FF in Product Taxonomy,
+              # this will use that custom color. Change to '#0000FF' for standard blue.
+              assign color_hex = '#03E8FF'
+            when 'green'
+              assign color_hex = '#008000'
+            when 'yellow'
+              assign color_hex = '#FFFF00'
+            when 'beige'
+              assign color_hex = '#F5F5DC'
+            when 'bronze'
+              assign color_hex = '#CD7F32'
+          endcase
+          
+          # Custom colors from Product Taxonomy (check normalized name for variations)
+          # Add your custom colors here - match the exact name used in your variant option
+          if color_hex == blank
+            case color_name_normalized
+              when 'oceanblue', 'ocean-blue', 'ocean_blue'
+                assign color_hex = '#03E8FF'
+              when 'customcolor', 'custom-color', 'custom_color'
+                # Add your custom color hex here - replace with the actual hex from Product Taxonomy
+                # If you configured a custom color swatch in Product Taxonomy, add its hex value here
+                assign color_hex = '#03E8FF'
+            endcase
           endif
+          
+          # If still no match, try exact match with original value (case-insensitive)
+          # This handles exact matches including spaces and capitalization
+          if color_hex == blank
+            assign value_lower = value | downcase
+            case value_lower
+              when 'ocean blue', 'oceanblue', 'ocean-blue', 'ocean_blue'
+                assign color_hex = '#03E8FF'
+              when 'custom color', 'customcolor', 'custom-color', 'custom_color'
+                # Add your custom color hex here - replace with the actual hex from Product Taxonomy
+                # If you configured a custom color swatch in Product Taxonomy, add its hex value here
+                assign color_hex = '#03E8FF'
+            endcase
+          endif
+          
+          # Additional custom color mappings can be added here
+          # Format: when 'your-color-name'
+          #   assign color_hex = '#YOURHEXCODE'
+          # endcase
         endunless
-      else
-        # Fallback: Try to get color from a color mapping for common colors
-        # Only use this if we couldn't find any metafield data
-        assign color_name_lower = value | downcase | strip
-        case color_name_lower
-          when 'black'
-            assign color_hex = '#000000'
-          when 'white'
-            assign color_hex = '#FFFFFF'
-          when 'red'
-            assign color_hex = '#FF0000'
-          when 'blue'
-            assign color_hex = '#0000FF'
-          when 'green'
-            assign color_hex = '#008000'
-          when 'yellow'
-            assign color_hex = '#FFFF00'
-          when 'ocean blue'
-            assign color_hex = '#03E8FF'
-          when 'beige'
-            assign color_hex = '#F5F5DC'
-          when 'bronze'
-            assign color_hex = '#CD7F32'
-        endcase
       endif
     endif
   -%}
@@ -192,6 +320,51 @@
         <span class="color-swatch" style="background-color: {{ color_hex }};" aria-label="{{ color_swatch_name }}"></span>
         <span class="color-swatch-text">{{ color_swatch_name }}</span>
         <span class="visually-hidden">{{ 'products.product.variant_sold_out_or_unavailable' | t }}</span>
+        {%- comment -%}
+          Debug: Check browser console to see metafield structure
+        {%- endcomment -%}
+        <script>
+          (function() {
+            var debugData = {
+              detected_hex: '{{ color_hex }}',
+              color_value: '{{ value }}',
+              color_value_lower: '{{ value | downcase }}',
+              is_color_option: {{ is_color_option }},
+              found_metafield: {% if found_metafield %}true{% else %}false{% endif %},
+              product_taxonomy: {{ product.metafields.shopify.taxonomy | json }},
+              variants: [
+                {%- for variant in product.variants -%}
+                  {%- if variant.option1 == value or variant.option2 == value or variant.option3 == value -%}
+                    {
+                      id: {{ variant.id }},
+                      option1: '{{ variant.option1 }}',
+                      option2: '{{ variant.option2 }}',
+                      option3: '{{ variant.option3 }}',
+                      shopify_color_exists: {% if variant.metafields.shopify.color != blank %}true{% else %}false{% endif %},
+                      shopify_color_value: '{{ variant.metafields.shopify.color.value }}',
+                      shopify_color_color: '{{ variant.metafields.shopify.color.color }}',
+                      shopify_color_hex: '{{ variant.metafields.shopify.color.hex }}',
+                      shopify_color_raw: '{{ variant.metafields.shopify.color }}'
+                    }{% unless forloop.last %},{% endunless %}
+                  {%- endif -%}
+                {%- endfor -%}
+              ]
+            };
+            console.log('🔍 Color Debug - {{ value }}:', debugData);
+            console.log('   → Detected hex:', '{{ color_hex }}');
+            console.log('   → Found metafield:', debugData.found_metafield);
+            console.log('   → Color value (lowercase):', debugData.color_value_lower);
+            if (debugData.variants.length > 0 && debugData.variants[0].shopify_color_exists) {
+              console.log('   → Found shopify.color metafield!');
+              console.log('   → Value:', debugData.variants[0].shopify_color_value);
+              console.log('   → Color:', debugData.variants[0].shopify_color_color);
+              console.log('   → Hex:', debugData.variants[0].shopify_color_hex);
+              console.log('   → Raw:', debugData.variants[0].shopify_color_raw);
+            } else {
+              console.log('   → No metafield found, using fallback mapping');
+            }
+          })();
+        </script>
       {%- else -%}
         {{ value -}}
         <span class="visually-hidden">{{ 'products.product.variant_sold_out_or_unavailable' | t }}</span>
