@@ -1,0 +1,140 @@
+.card__heading {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  flex-wrap: wrap;
+  position: relative;
+}
+
+/* Ensure product link doesn't cover the button */
+.card__heading .full-unstyled-link {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  min-width: 0;
+}
+
+.card__quick-add-icon {
+  background: rgb(var(--color-background));
+  border: 0.15rem solid rgba(var(--color-foreground), 0.15);
+  padding: 0.6rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  border-radius: 50%;
+  flex-shrink: 0;
+  width: 4rem;
+  height: 4rem;
+  position: relative;
+  z-index: 2;
+  box-shadow: 0 0.2rem 0.4rem rgba(0, 0, 0, 0.1);
+}
+
+.card__quick-add-icon:hover {
+  background-color: rgba(var(--color-foreground), 0.08);
+  border-color: rgba(var(--color-foreground), 0.3);
+  transform: scale(1.15);
+  box-shadow: 0 0.4rem 0.8rem rgba(0, 0, 0, 0.15);
+}
+
+.card__quick-add-icon:active {
+  transform: scale(0.95);
+}
+
+.card__quick-add-icon:focus {
+  outline: 0.2rem solid rgba(var(--color-foreground), 0.5);
+  outline-offset: 0.2rem;
+}
+
+.card__quick-add-icon .icon {
+  width: 2.2rem;
+  height: 2.2rem;
+  color: rgb(var(--color-foreground));
+  pointer-events: none;
+}
+
+.card__quick-add-icon.loading {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.card__quick-add-icon.loading .icon {
+  animation: spin 0.8s linear infinite;
+}
+
+.card__quick-add-icon.success {
+  background-color: rgba(var(--color-success), 0.1);
+}
+
+.card__quick-add-icon.success .icon {
+  color: rgb(var(--color-success));
+  animation: successPop 0.3s ease-out;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes successPop {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.3);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* Mobile adjustments */
+@media screen and (max-width: 749px) {
+  .card__quick-add-icon {
+    width: 3.6rem;
+    height: 3.6rem;
+    padding: 0.5rem;
+  }
+  
+  .card__quick-add-icon .icon {
+    width: 2rem;
+    height: 2rem;
+  }
+}
+
+/* Ensure the heading stays on one line on larger screens */
+@media screen and (min-width: 750px) {
+  .card__heading {
+    flex-wrap: nowrap;
+  }
+}
+
+/* Error toast animations */
+@keyframes slideIn {
+  from {
+    transform: translateX(400px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideOut {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(400px);
+    opacity: 0;
+  }
+}
+

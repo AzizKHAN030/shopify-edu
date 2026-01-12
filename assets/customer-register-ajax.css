@@ -1,0 +1,87 @@
+/* Registration message styles */
+.register-message {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+  border-radius: 0.5rem;
+  font-size: 1.4rem;
+  line-height: 1.5;
+}
+
+.register-message .icon {
+  width: 2rem;
+  height: 2rem;
+  flex-shrink: 0;
+}
+
+.register-message--error {
+  background-color: #FEE;
+  border: 0.1rem solid #EB001B;
+  color: #EB001B;
+}
+
+.register-message--success {
+  background-color: #E8F5E9;
+  border: 0.1rem solid #3E8E41;
+  color: #2E7D32;
+}
+
+/* Loading button styles */
+#register-submit-button {
+  position: relative;
+  transition: all 0.2s ease;
+}
+
+#register-submit-button.loading {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.button-spinner {
+  display: inline-block;
+  width: 2rem;
+  height: 2rem;
+}
+
+.button-spinner .spinner {
+  animation: spin 1s linear infinite;
+}
+
+.button-spinner .spinner .path {
+  stroke: currentColor;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Form disabled state */
+#create_customer_form input:disabled,
+#create_customer_form button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+#create_customer_form input:disabled {
+  background-color: rgba(var(--color-foreground), 0.05);
+}
+
+/* Mobile responsiveness */
+@media screen and (max-width: 749px) {
+  .register-message {
+    padding: 1.2rem;
+    font-size: 1.3rem;
+  }
+  
+  .register-message .icon {
+    width: 1.8rem;
+    height: 1.8rem;
+  }
+}

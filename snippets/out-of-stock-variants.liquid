@@ -1,0 +1,194 @@
+{% comment %}
+  Renders out-of-stock variants list
+  
+  Accepts:
+  - product: {Object} product object.
+  
+  Usage:
+  {% render 'out-of-stock-variants', product: product %}
+{% endcomment %}
+
+{%- if product.variants.size > 1 -%}
+  {%- liquid
+    # Create arrays to store out of stock variants by option type
+    assign oos_colors = ''
+    assign oos_sizes = ''
+    assign oos_option1 = ''
+    assign oos_option2 = ''
+    assign oos_option3 = ''
+    
+    # Get option names
+    assign option1_name = product.options_with_values[0].name | downcase
+    assign option2_name = ''
+    assign option3_name = ''
+    
+    if product.options_with_values.size > 1
+      assign option2_name = product.options_with_values[1].name | downcase
+    endif
+    
+    if product.options_with_values.size > 2
+      assign option3_name = product.options_with_values[2].name | downcase
+    endif
+    
+    # Loop through all variants and collect out of stock ones
+    for variant in product.variants
+      unless variant.available
+        # Check which option this variant represents
+        if product.options_with_values.size == 1
+          # Single option product
+          if oos_option1 == ''
+            assign oos_option1 = variant.option1
+          else
+            assign oos_option1 = oos_option1 | append: ',' | append: variant.option1
+          endif
+        elsif product.options_with_values.size == 2
+          # Two options - collect unique values for each
+          assign option1_exists = false
+          assign option2_exists = false
+          
+          # Check option 1
+          assign oos_option1_array = oos_option1 | split: ','
+          for item in oos_option1_array
+            if item == variant.option1
+              assign option1_exists = true
+              break
+            endif
+          endfor
+          
+          unless option1_exists
+            if oos_option1 == ''
+              assign oos_option1 = variant.option1
+            else
+              assign oos_option1 = oos_option1 | append: ',' | append: variant.option1
+            endif
+          endunless
+          
+          # Check option 2
+          assign oos_option2_array = oos_option2 | split: ','
+          for item in oos_option2_array
+            if item == variant.option2
+              assign option2_exists = true
+              break
+            endif
+          endfor
+          
+          unless option2_exists
+            if oos_option2 == ''
+              assign oos_option2 = variant.option2
+            else
+              assign oos_option2 = oos_option2 | append: ',' | append: variant.option2
+            endif
+          endunless
+        elsif product.options_with_values.size == 3
+          # Three options - collect unique values for each
+          assign option1_exists = false
+          assign option2_exists = false
+          assign option3_exists = false
+          
+          # Check option 1
+          assign oos_option1_array = oos_option1 | split: ','
+          for item in oos_option1_array
+            if item == variant.option1
+              assign option1_exists = true
+              break
+            endif
+          endfor
+          
+          unless option1_exists
+            if oos_option1 == ''
+              assign oos_option1 = variant.option1
+            else
+              assign oos_option1 = oos_option1 | append: ',' | append: variant.option1
+            endif
+          endunless
+          
+          # Check option 2
+          assign oos_option2_array = oos_option2 | split: ','
+          for item in oos_option2_array
+            if item == variant.option2
+              assign option2_exists = true
+              break
+            endif
+          endfor
+          
+          unless option2_exists
+            if oos_option2 == ''
+              assign oos_option2 = variant.option2
+            else
+              assign oos_option2 = oos_option2 | append: ',' | append: variant.option2
+            endif
+          endunless
+          
+          # Check option 3
+          assign oos_option3_array = oos_option3 | split: ','
+          for item in oos_option3_array
+            if item == variant.option3
+              assign option3_exists = true
+              break
+            endif
+          endfor
+          
+          unless option3_exists
+            if oos_option3 == ''
+              assign oos_option3 = variant.option3
+            else
+              assign oos_option3 = oos_option3 | append: ',' | append: variant.option3
+            endif
+          endunless
+        endif
+      endunless
+    endfor
+    
+    # Check if we have any out of stock variants
+    assign has_oos_variants = false
+    if oos_option1 != '' or oos_option2 != '' or oos_option3 != ''
+      assign has_oos_variants = true
+    endif
+  -%}
+  
+  {%- if has_oos_variants -%}
+    <div class="product__out-of-stock">
+      {%- if oos_option1 != '' -%}
+        {%- assign oos_option1_array = oos_option1 | split: ',' -%}
+        <div class="out-of-stock-group">
+          <p class="out-of-stock-group__title">
+            Out of stock {{ option1_name }}:
+          </p>
+          <ul class="out-of-stock-group__list">
+            {%- for item in oos_option1_array -%}
+              <li>{{ item }}</li>
+            {%- endfor -%}
+          </ul>
+        </div>
+      {%- endif -%}
+      
+      {%- if oos_option2 != '' -%}
+        {%- assign oos_option2_array = oos_option2 | split: ',' -%}
+        <div class="out-of-stock-group">
+          <p class="out-of-stock-group__title">
+            Out of stock {{ option2_name }}:
+          </p>
+          <ul class="out-of-stock-group__list">
+            {%- for item in oos_option2_array -%}
+              <li>{{ item }}</li>
+            {%- endfor -%}
+          </ul>
+        </div>
+      {%- endif -%}
+      
+      {%- if oos_option3 != '' -%}
+        {%- assign oos_option3_array = oos_option3 | split: ',' -%}
+        <div class="out-of-stock-group">
+          <p class="out-of-stock-group__title">
+            Out of stock {{ option3_name }}:
+          </p>
+          <ul class="out-of-stock-group__list">
+            {%- for item in oos_option3_array -%}
+              <li>{{ item }}</li>
+            {%- endfor -%}
+          </ul>
+        </div>
+      {%- endif -%}
+    </div>
+  {%- endif -%}
+{%- endif -%}
