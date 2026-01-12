@@ -1,15 +1,10 @@
 class CustomerRegister {
   constructor() {
-    console.log('[CustomerRegister] Initializing...');
     this.form = document.getElementById('create_customer_form');
     this.submitButton = document.getElementById('register-submit-button');
     this.messageContainer = document.getElementById('register-message');
     
-    console.log('[CustomerRegister] Form found:', !!this.form);
-    console.log('[CustomerRegister] Submit button found:', !!this.submitButton);
-    
     if (!this.form) {
-      console.error('[CustomerRegister] Registration form not found - AJAX registration will not work!');
       return;
     }
     
@@ -17,20 +12,15 @@ class CustomerRegister {
   }
 
   init() {
-    console.log('[CustomerRegister] Attaching submit event listener...');
-    
     // Remove the form action to prevent traditional submission
     this.form.removeAttribute('action');
     
     // Attach event listener with capture phase for priority
     const handleSubmitBound = this.handleSubmit.bind(this);
     this.form.addEventListener('submit', handleSubmitBound, true);
-    
-    console.log('[CustomerRegister] Ready! Form will submit via AJAX.');
   }
 
   handleSubmit(event) {
-    console.log('[CustomerRegister] Form submitted! Preventing default...');
     event.preventDefault();
     event.stopPropagation();
     event.stopImmediatePropagation();
@@ -44,13 +34,6 @@ class CustomerRegister {
     const lastName = formData.get('customer[last_name]') || '';
     const email = formData.get('customer[email]');
     const password = formData.get('customer[password]');
-
-    console.log('[CustomerRegister] Form data:', {
-      firstName: firstName,
-      lastName: lastName,
-      email: email,
-      hasPassword: !!password
-    });
 
     // Validate
     if (!email || !password) {
@@ -74,8 +57,6 @@ class CustomerRegister {
   }
 
   async createCustomer(customerData) {
-    console.log('[CustomerRegister] Creating customer via GraphQL...', { email: customerData.email });
-    
     // Use Shopify's Storefront API GraphQL
     const mutation = `
       mutation customerCreate($input: CustomerCreateInput!) {
@@ -105,28 +86,17 @@ class CustomerRegister {
       }
     };
 
-    console.log('[CustomerRegister] GraphQL variables:', {
-      email: variables.input.email,
-      firstName: variables.input.firstName,
-      lastName: variables.input.lastName
-    });
-
     try {
       // Get the storefront access token from the page
       const storefrontAccessToken = this.getStorefrontAccessToken();
       
-      console.log('[CustomerRegister] Storefront token found:', !!storefrontAccessToken);
-      console.log('[CustomerRegister] Shop domain:', window.Shopify?.shop);
-      
       if (!storefrontAccessToken) {
-        console.error('[CustomerRegister] Storefront API access token not found!');
         this.showMessage('Configuration error. Please contact support.', 'error');
         this.unlockForm();
         return;
       }
 
       const graphqlUrl = `https://${window.Shopify.shop}/api/2024-01/graphql.json`;
-      console.log('[CustomerRegister] Making GraphQL request to:', graphqlUrl);
 
       const response = await fetch(graphqlUrl, {
         method: 'POST',
@@ -145,8 +115,6 @@ class CustomerRegister {
       }
 
       const result = await response.json();
-      
-      console.log('[CustomerRegister] ✅ GraphQL Response received:', result);
 
       if (result.errors) {
         // GraphQL errors
@@ -165,7 +133,6 @@ class CustomerRegister {
         this.unlockForm();
       } else if (customer) {
         // Success! Customer created
-        console.log('[CustomerRegister] ✅ Customer created successfully!');
         this.showMessage('Account created successfully! Redirecting to login...', 'success');
         
         // Redirect to login page after a short delay
@@ -180,7 +147,6 @@ class CustomerRegister {
         this.unlockForm();
       }
     } catch (error) {
-      console.error('Registration error:', error);
       this.showMessage('Network error. Please check your connection and try again.', 'error');
       this.unlockForm();
     }
@@ -265,16 +231,11 @@ class CustomerRegister {
 }
 
 // Initialize when DOM is ready
-console.log('[CustomerRegister] Script loaded! DOM ready state:', document.readyState);
-
 if (document.readyState === 'loading') {
-  console.log('[CustomerRegister] Waiting for DOMContentLoaded...');
   document.addEventListener('DOMContentLoaded', () => {
-    console.log('[CustomerRegister] DOMContentLoaded fired!');
     new CustomerRegister();
   });
 } else {
-  console.log('[CustomerRegister] DOM already loaded, initializing now...');
   new CustomerRegister();
 }
 
