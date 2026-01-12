@@ -141,10 +141,15 @@ class CustomerRegister {
       } else if (customer) {
         // Success! Customer created
         console.log('[CustomerRegister] ✅ Customer created successfully!');
-        this.showMessage('Account created successfully! Logging you in...', 'success');
+        this.showMessage('Account created successfully! Redirecting to login...', 'success');
         
-        // Now log them in using customerAccessTokenCreate
-        this.loginCustomer(customerData.email, customerData.password);
+        // Redirect to login page after a short delay
+        setTimeout(() => {
+          // Store a flag in sessionStorage to show success message on login page
+          sessionStorage.setItem('registrationSuccess', 'true');
+          sessionStorage.setItem('registeredEmail', customerData.email);
+          window.location.href = '/account/login';
+        }, 1500);
       } else {
         this.showMessage('An unexpected error occurred. Please try again.', 'error');
         this.unlockForm();
@@ -154,43 +159,6 @@ class CustomerRegister {
       this.showMessage('Network error. Please check your connection and try again.', 'error');
       this.unlockForm();
     }
-  }
-
-  async loginCustomer(email, password) {
-    console.log('[CustomerRegister] Attempting to log in customer...');
-    
-    // Create a hidden form to submit login credentials
-    // This uses Shopify's traditional login endpoint which creates a session
-    const loginForm = document.createElement('form');
-    loginForm.method = 'POST';
-    loginForm.action = '/account/login';
-    loginForm.style.display = 'none';
-    
-    // Email field
-    const emailInput = document.createElement('input');
-    emailInput.type = 'hidden';
-    emailInput.name = 'customer[email]';
-    emailInput.value = email;
-    loginForm.appendChild(emailInput);
-    
-    // Password field
-    const passwordInput = document.createElement('input');
-    passwordInput.type = 'hidden';
-    passwordInput.name = 'customer[password]';
-    passwordInput.value = password;
-    loginForm.appendChild(passwordInput);
-    
-    // Return URL (redirect to account after login)
-    const returnInput = document.createElement('input');
-    returnInput.type = 'hidden';
-    returnInput.name = 'return_url';
-    returnInput.value = '/account';
-    loginForm.appendChild(returnInput);
-    
-    document.body.appendChild(loginForm);
-    
-    console.log('[CustomerRegister] Submitting login form...');
-    loginForm.submit();
   }
 
   getStorefrontAccessToken() {
