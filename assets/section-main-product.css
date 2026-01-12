@@ -260,6 +260,70 @@ fieldset.product-form__input .form__label {
     0 0 0 0.5rem rgba(var(--color-foreground), 0.55);
 }
 
+/* Color Swatch Styles */
+.color-swatch-label {
+  padding: 0;
+  min-width: 4.4rem;
+  height: 4.4rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  border: 0.2rem solid rgba(var(--color-foreground), 0.1);
+  transition: border-color var(--duration-short) ease, transform var(--duration-short) ease;
+}
+
+.color-swatch-label:hover {
+  border-color: rgba(var(--color-foreground), 0.3);
+  transform: scale(1.05);
+}
+
+.product-form__input input[type='radio']:checked + .color-swatch-label {
+  border-color: rgb(var(--color-foreground));
+  border-width: 0.3rem;
+  box-shadow: 0 0 0 0.2rem rgb(var(--color-background)),
+    0 0 0 0.4rem rgba(var(--color-foreground), 0.2);
+}
+
+.product-form__input input[type='radio'].disabled + .color-swatch-label,
+.product-form__input input[type='radio']:disabled + .color-swatch-label {
+  opacity: 0.5;
+  border-color: rgba(var(--color-foreground), 0.1);
+  cursor: not-allowed;
+}
+
+.color-swatch {
+  width: 3.2rem;
+  height: 3.2rem;
+  border-radius: 50%;
+  display: inline-block;
+  border: 0.1rem solid rgba(0, 0, 0, 0.1);
+  box-shadow: inset 0 0 0 0.1rem rgba(255, 255, 255, 0.1);
+  position: relative;
+  overflow: hidden;
+}
+
+.color-swatch::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0.1rem rgba(0, 0, 0, 0.1);
+}
+
+.product-form__input input[type='radio']:checked + .color-swatch-label .color-swatch {
+  box-shadow: 0 0 0 0.2rem rgb(var(--color-background)),
+    0 0 0 0.4rem rgba(var(--color-foreground), 0.3);
+}
+
+.product-form__input input[type='radio']:focus-visible + .color-swatch-label {
+  box-shadow: 0 0 0 0.3rem rgb(var(--color-background)),
+    0 0 0 0.5rem rgba(var(--color-foreground), 0.55);
+}
+
 /* Fallback */
 .product-form__input input[type='radio'].focused + label,
 .no-js .shopify-payment-button__button [role="button"]:focus + label {

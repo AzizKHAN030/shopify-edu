@@ -21,28 +21,103 @@
   assign variants_option3_arr = product.variants | map: 'option3'
 
   assign product_form_id = 'product-form-' | append: section.id
+  
+  # Check if this is a Color option (case-insensitive)
+  assign is_color_option = false
+  assign option_name_lower = option.name | downcase
+  if option_name_lower == 'color' or option_name_lower == 'colour'
+    assign is_color_option = true
+  endif
 -%}
 
 {%- for value in option.values -%}
   {%- liquid
     assign option_disabled = true
+    assign variant_with_value = null
+    assign color_swatch_value = null
+    assign color_swatch_name = value
 
     for option1_name in variants_option1_arr
       case option.position
         when 1
           if variants_option1_arr[forloop.index0] == value and variants_available_arr[forloop.index0]
             assign option_disabled = false
+            assign variant_with_value = product.variants[forloop.index0]
           endif
         when 2
           if option1_name == product.selected_or_first_available_variant.option1 and variants_option2_arr[forloop.index0] == value and variants_available_arr[forloop.index0]
             assign option_disabled = false
+            assign variant_with_value = product.variants[forloop.index0]
           endif
         when 3
           if option1_name == product.selected_or_first_available_variant.option1 and variants_option2_arr[forloop.index0] == product.selected_or_first_available_variant.option2 and variants_option3_arr[forloop.index0] == value and variants_available_arr[forloop.index0]
             assign option_disabled = false
+            assign variant_with_value = product.variants[forloop.index0]
           endif
       endcase
     endfor
+
+    # Try to get color swatch information from variant metafields
+    if is_color_option and variant_with_value != null
+      # Check for Shopify Product Taxonomy color swatch metafields
+      # Product Taxonomy stores color swatch data in variant metafields
+      # Try multiple possible metafield paths
+      if variant_with_value.metafields.shopify.color != blank
+        assign color_swatch_value = variant_with_value.metafields.shopify.color
+      elsif variant_with_value.metafields.shopify.color_swatch != blank
+        assign color_swatch_value = variant_with_value.metafields.shopify.color_swatch
+      elsif variant_with_value.metafields.custom.color_swatch != blank
+        assign color_swatch_value = variant_with_value.metafields.custom.color_swatch
+      elsif variant_with_value.metafields.custom.color != blank
+        assign color_swatch_value = variant_with_value.metafields.custom.color
+      endif
+      
+      # If we have a color swatch metafield, try to extract the hex color
+      # The metafield might be a JSON object, a string, or a color object
+      if color_swatch_value != blank
+        # Check if it's already a hex color string
+        if color_swatch_value contains '#'
+          assign color_parts = color_swatch_value | split: '#'
+          if color_parts.size > 1
+            assign color_hex = '#' | append: color_parts[1] | split: ' ' | first | split: ',' | first | split: ';' | first
+          else
+            assign color_hex = color_swatch_value
+          endif
+        # Check if it's a color object with a 'value' or 'color' property
+        elsif color_swatch_value.value != blank
+          assign color_hex = color_swatch_value.value
+        elsif color_swatch_value.color != blank
+          assign color_hex = color_swatch_value.color
+        else
+          # Try to use the value directly
+          assign color_hex = color_swatch_value
+        endif
+        
+        # Ensure we have a valid hex color (starts with #)
+        unless color_hex contains '#'
+          assign color_hex = '#' | append: color_hex
+        endunless
+      else
+        # Fallback: Try to get color from a color mapping for common colors
+        assign color_name_lower = value | downcase
+        case color_name_lower
+          when 'black'
+            assign color_hex = '#000000'
+          when 'white'
+            assign color_hex = '#FFFFFF'
+          when 'red'
+            assign color_hex = '#FF0000'
+          when 'blue'
+            assign color_hex = '#0000FF'
+          when 'green'
+            assign color_hex = '#008000'
+          when 'yellow'
+            assign color_hex = '#FFFF00'
+          when 'ocean blue'
+            assign color_hex = '#03E8FF'
+        endcase
+      endif
+    endif
   -%}
 
   {%- if block.settings.picker_type == 'button' -%}
@@ -58,10 +133,23 @@
       {% if option_disabled %}
         class="disabled"
       {% endif %}
+      {% if is_color_option and color_hex != blank %}
+        data-color-swatch="{{ color_hex }}"
+        data-color-name="{{ color_swatch_name }}"
+      {% endif %}
     >
-    <label for="{{ section.id }}-{{ option.position }}-{{ forloop.index0 }}">
-      {{ value -}}
-      <span class="visually-hidden">{{ 'products.product.variant_sold_out_or_unavailable' | t }}</span>
+    <label 
+      for="{{ section.id }}-{{ option.position }}-{{ forloop.index0 }}"
+      {% if is_color_option and color_hex != blank %}class="color-swatch-label"{% endif %}
+    >
+      {%- if is_color_option and color_hex != blank -%}
+        <span class="color-swatch" style="background-color: {{ color_hex }};" aria-label="{{ color_swatch_name }}">
+          <span class="visually-hidden">{{ color_swatch_name }}</span>
+        </span>
+      {%- else -%}
+        {{ value -}}
+        <span class="visually-hidden">{{ 'products.product.variant_sold_out_or_unavailable' | t }}</span>
+      {%- endif -%}
     </label>
   {%- elsif block.settings.picker_type == 'dropdown' -%}
     <option
