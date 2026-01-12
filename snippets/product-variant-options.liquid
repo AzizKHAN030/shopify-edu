@@ -99,7 +99,7 @@
         endunless
       else
         # Fallback: Try to get color from a color mapping for common colors
-        assign color_name_lower = value | downcase
+        assign color_name_lower = value | downcase | strip
         case color_name_lower
           when 'black'
             assign color_hex = '#000000'
@@ -115,8 +115,37 @@
             assign color_hex = '#FFFF00'
           when 'ocean blue'
             assign color_hex = '#03E8FF'
+          when 'beige'
+            assign color_hex = '#F5F5DC'
+          when 'bronze'
+            assign color_hex = '#CD7F32'
         endcase
       endif
+    endif
+    
+    # If we still don't have a color hex but it's a color option, try to find it from any variant
+    if is_color_option and color_hex == blank
+      for variant in product.variants
+        if variant.option1 == value or variant.option2 == value or variant.option3 == value
+          if variant.metafields.shopify.color != blank
+            assign color_swatch_value = variant.metafields.shopify.color
+            if color_swatch_value contains '#'
+              assign color_parts = color_swatch_value | split: '#'
+              if color_parts.size > 1
+                assign color_hex = '#' | append: color_parts[1] | split: ' ' | first | split: ',' | first | split: ';' | first
+              endif
+            elsif color_swatch_value.value != blank
+              assign color_hex = color_swatch_value.value
+            elsif color_swatch_value.color != blank
+              assign color_hex = color_swatch_value.color
+            endif
+            unless color_hex contains '#'
+              assign color_hex = '#' | append: color_hex
+            endunless
+            break
+          endif
+        endif
+      endfor
     endif
   -%}
 
@@ -143,9 +172,9 @@
       {% if is_color_option and color_hex != blank %}class="color-swatch-label"{% endif %}
     >
       {%- if is_color_option and color_hex != blank -%}
-        <span class="color-swatch" style="background-color: {{ color_hex }};" aria-label="{{ color_swatch_name }}">
-          <span class="visually-hidden">{{ color_swatch_name }}</span>
-        </span>
+        <span class="color-swatch" style="background-color: {{ color_hex }};" aria-label="{{ color_swatch_name }}"></span>
+        <span class="color-swatch-text">{{ color_swatch_name }}</span>
+        <span class="visually-hidden">{{ 'products.product.variant_sold_out_or_unavailable' | t }}</span>
       {%- else -%}
         {{ value -}}
         <span class="visually-hidden">{{ 'products.product.variant_sold_out_or_unavailable' | t }}</span>
