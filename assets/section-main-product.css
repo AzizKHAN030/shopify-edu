@@ -234,6 +234,91 @@ fieldset.product-form__input .form__label {
   display: none;
 }
 
+/* Color Swatch Styles */
+.product-form__input input[type='radio'] + label.color-swatch {
+  width: 4.4rem;
+  height: 4.4rem;
+  min-width: 4.4rem;
+  padding: 0;
+  margin: 0.7rem 0.8rem 0.2rem 0;
+  border-radius: 50%;
+  border: 0.2rem solid rgba(var(--color-foreground), 0.1);
+  background-color: transparent;
+  position: relative;
+  overflow: visible;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.product-form__input input[type='radio'] + label.color-swatch .color-swatch__inner {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  display: block;
+  border: 0.2rem solid rgba(var(--color-foreground), 0.1);
+  box-sizing: border-box;
+}
+
+.product-form__input input[type='radio'] + label.color-swatch:hover {
+  border-color: rgba(var(--color-foreground), 0.3);
+  transform: scale(1.1);
+  transition: transform var(--duration-short) ease, border-color var(--duration-short) ease;
+}
+
+.product-form__input input[type='radio']:checked + label.color-swatch {
+  border-color: rgb(var(--color-foreground));
+  border-width: 0.3rem;
+  background-color: transparent;
+  color: transparent;
+  box-shadow: 0 0 0 0.2rem rgb(var(--color-background)),
+    0 0 0 0.4rem rgba(var(--color-foreground), 0.3);
+}
+
+.product-form__input input[type='radio']:checked + label.color-swatch .color-swatch__inner {
+  border-color: rgba(var(--color-foreground), 0.2);
+}
+
+.product-form__input input[type='radio']:focus-visible + label.color-swatch {
+  box-shadow: 0 0 0 0.3rem rgb(var(--color-background)),
+    0 0 0 0.5rem rgba(var(--color-foreground), 0.55);
+  outline: none;
+}
+
+.product-form__input input[type='radio'].disabled + label.color-swatch,
+.product-form__input input[type='radio']:disabled + label.color-swatch {
+  opacity: 0.4;
+  cursor: not-allowed;
+  position: relative;
+}
+
+.product-form__input input[type='radio'].disabled + label.color-swatch::after,
+.product-form__input input[type='radio']:disabled + label.color-swatch::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 0.2rem;
+  background-color: rgba(var(--color-foreground), 0.6);
+  transform: rotate(45deg);
+  z-index: 1;
+}
+
+.product-form__input input[type='radio'].disabled:checked + label.color-swatch::after,
+.product-form__input input[type='radio']:disabled:checked + label.color-swatch::after {
+  background-color: rgba(var(--color-background), 0.6);
+}
+
+@media screen and (max-width: 749px) {
+  .product-form__input input[type='radio'] + label.color-swatch {
+    width: 4rem;
+    height: 4rem;
+    min-width: 4rem;
+    margin: 0.7rem 0.6rem 0.2rem 0;
+  }
+}
+
 @media screen and (forced-colors: active) {
   .product-form__input input[type=radio]:checked + label {
     text-decoration: underline;

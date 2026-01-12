@@ -21,12 +21,56 @@
   assign variants_option3_arr = product.variants | map: 'option3'
 
   assign product_form_id = 'product-form-' | append: section.id
+  
+  # Check if this is a color option and if we should show swatches
+  assign is_color_option = false
+  assign show_swatches = false
+  if option.name == 'Color' or option.name == 'Colour'
+    assign is_color_option = true
+    assign show_swatches = true
+  endif
 -%}
 
 {%- for value in option.values -%}
   {%- liquid
     assign option_disabled = true
+    assign swatch_color = blank
+    assign swatch_name = value
 
+    # Find the variant that matches this option value to get swatch data
+    for variant in product.variants
+      assign variant_matches = false
+      case option.position
+        when 1
+          if variant.option1 == value
+            assign variant_matches = true
+          endif
+        when 2
+          if variant.option2 == value
+            assign variant_matches = true
+          endif
+        when 3
+          if variant.option3 == value
+            assign variant_matches = true
+          endif
+      endcase
+
+      if variant_matches
+        # Check for color swatch in variant metafields (Product Taxonomy)
+        if variant.metafields.shopify.color != blank
+          assign swatch_color = variant.metafields.shopify.color
+        elsif variant.metafields.custom.color != blank
+          assign swatch_color = variant.metafields.custom.color
+        endif
+        
+        # Check if variant is available
+        if variant.available
+          assign option_disabled = false
+        endif
+      endif
+    endfor
+
+    # Check availability based on other selected options
     for option1_name in variants_option1_arr
       case option.position
         when 1
@@ -43,6 +87,29 @@
           endif
       endcase
     endfor
+
+    # If swatch_color is still blank, try to get it from the value name
+    # This handles cases where swatch data might be in the option value itself
+    if swatch_color == blank and is_color_option
+      # Try common color name mappings
+      assign value_lower = value | downcase
+      case value_lower
+        when 'black'
+          assign swatch_color = '#000000'
+        when 'white'
+          assign swatch_color = '#FFFFFF'
+        when 'red'
+          assign swatch_color = '#FF0000'
+        when 'blue'
+          assign swatch_color = '#0000FF'
+        when 'green'
+          assign swatch_color = '#008000'
+        when 'yellow'
+          assign swatch_color = '#FFFF00'
+        when 'ocean blue'
+          assign swatch_color = '#03E8FF'
+      endcase
+    endif
   -%}
 
   {%- if block.settings.picker_type == 'button' -%}
@@ -58,10 +125,26 @@
       {% if option_disabled %}
         class="disabled"
       {% endif %}
+      {% if show_swatches and swatch_color != blank %}
+        data-swatch-color="{{ swatch_color }}"
+        data-swatch-name="{{ swatch_name }}"
+      {% endif %}
     >
-    <label for="{{ section.id }}-{{ option.position }}-{{ forloop.index0 }}">
-      {{ value -}}
-      <span class="visually-hidden">{{ 'products.product.variant_sold_out_or_unavailable' | t }}</span>
+    <label 
+      for="{{ section.id }}-{{ option.position }}-{{ forloop.index0 }}"
+      {% if show_swatches and swatch_color != blank %}
+        class="color-swatch"
+        style="background-color: {{ swatch_color }};"
+        title="{{ value }}"
+      {% endif %}
+    >
+      {%- if show_swatches and swatch_color != blank -%}
+        <span class="color-swatch__inner" style="background-color: {{ swatch_color }};"></span>
+        <span class="visually-hidden">{{ value }}</span>
+      {%- else -%}
+        {{ value -}}
+        <span class="visually-hidden">{{ 'products.product.variant_sold_out_or_unavailable' | t }}</span>
+      {%- endif -%}
     </label>
   {%- elsif block.settings.picker_type == 'dropdown' -%}
     <option
