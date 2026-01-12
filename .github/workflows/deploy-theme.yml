@@ -7,35 +7,42 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          node-version: "18"
+          node-version: "20"
 
       - name: Install Shopify CLI
-        run: npm install -g @shopify/cli
+        run: npm install -g @shopify/cli @shopify/theme
 
-      - name: Deploy
+      # 🔑 REQUIRED: Inject Storefront API token at deploy-time
+      - name: Inject Storefront API token
+        run: |
+          sed -i "s|YOUR_STOREFRONT_API_TOKEN_HERE|${{ secrets.SHOPIFY_STOREFRONT_TOKEN }}|g" layout/theme.liquid
+
+      - name: Deploy theme
+        env:
+          SHOPIFY_CLI_THEME_STORE: ${{ secrets.SHOPIFY_STORE }}
+          SHOPIFY_CLI_THEME_TOKEN: ${{ secrets.SHOPIFY_TOKEN }}
         run: |
           BRANCH="${{ github.ref_name }}"
 
           if [ "$BRANCH" = "production" ]; then
             shopify theme push \
-              --store "${{ secrets.SHOPIFY_STORE }}" \
-              --password "${{ secrets.SHOPIFY_CLI_THEME_TOKEN }}" \
-              --theme "${{ vars.PRODUCTION_THEME_NAME }}" \
+              --theme ${{ secrets.PROD_THEME_ID }} \
               --allow-live \
-              --ignore=config/settings_data.json \
-              --ignore=templates/*.json \
-              --ignore=sections/*.json
+              --ignore config/settings_data.json \
+              --ignore templates/*.json \
+              --ignore sections/*.json
           else
             shopify theme push \
-              --store "${{ secrets.SHOPIFY_STORE }}" \
-              --password "${{ secrets.SHOPIFY_CLI_THEME_TOKEN }}" \
-              --theme "${{ vars.DEVELOPMENT_THEME_NAME }}" \
-              --ignore=config/settings_data.json \
-              --ignore=templates/*.json \
-              --ignore=sections/*.json
+              --theme ${{ secrets.DEV_THEME_ID }} \
+              --ignore config/settings_data.json \
+              --ignore templates/*.json \
+              --ignore sections/*.json
           fi
