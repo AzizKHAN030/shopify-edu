@@ -1,11 +1,15 @@
 class CustomerRegister {
   constructor() {
+    console.log('[CustomerRegister] Initializing...');
     this.form = document.getElementById('create_customer_form');
     this.submitButton = document.getElementById('register-submit-button');
     this.messageContainer = document.getElementById('register-message');
     
+    console.log('[CustomerRegister] Form found:', !!this.form);
+    console.log('[CustomerRegister] Submit button found:', !!this.submitButton);
+    
     if (!this.form) {
-      console.warn('Registration form not found');
+      console.error('[CustomerRegister] Registration form not found - AJAX registration will not work!');
       return;
     }
     
@@ -13,10 +17,13 @@ class CustomerRegister {
   }
 
   init() {
+    console.log('[CustomerRegister] Attaching submit event listener...');
     this.form.addEventListener('submit', this.handleSubmit.bind(this));
+    console.log('[CustomerRegister] Ready! Form will submit via AJAX.');
   }
 
   handleSubmit(event) {
+    console.log('[CustomerRegister] Form submitted! Preventing default...');
     event.preventDefault();
     
     // Clear previous messages
@@ -48,6 +55,8 @@ class CustomerRegister {
   }
 
   async createCustomer(customerData) {
+    console.log('[CustomerRegister] Creating customer via GraphQL...', { email: customerData.email });
+    
     // Use Shopify's Storefront API GraphQL
     const mutation = `
       mutation customerCreate($input: CustomerCreateInput!) {
@@ -81,14 +90,20 @@ class CustomerRegister {
       // Get the storefront access token from the page
       const storefrontAccessToken = this.getStorefrontAccessToken();
       
+      console.log('[CustomerRegister] Storefront token found:', !!storefrontAccessToken);
+      console.log('[CustomerRegister] Shop domain:', window.Shopify?.shop);
+      
       if (!storefrontAccessToken) {
-        console.error('Storefront API access token not found');
+        console.error('[CustomerRegister] Storefront API access token not found!');
         this.showMessage('Configuration error. Please contact support.', 'error');
         this.unlockForm();
         return;
       }
 
-      const response = await fetch(`https://${window.Shopify.shop}/api/2024-01/graphql.json`, {
+      const graphqlUrl = `https://${window.Shopify.shop}/api/2024-01/graphql.json`;
+      console.log('[CustomerRegister] Making GraphQL request to:', graphqlUrl);
+
+      const response = await fetch(graphqlUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -106,7 +121,7 @@ class CustomerRegister {
 
       const result = await response.json();
       
-      console.log('GraphQL Response:', result);
+      console.log('[CustomerRegister] ✅ GraphQL Response received:', result);
 
       if (result.errors) {
         // GraphQL errors
@@ -221,11 +236,16 @@ class CustomerRegister {
 }
 
 // Initialize when DOM is ready
+console.log('[CustomerRegister] Script loaded! DOM ready state:', document.readyState);
+
 if (document.readyState === 'loading') {
+  console.log('[CustomerRegister] Waiting for DOMContentLoaded...');
   document.addEventListener('DOMContentLoaded', () => {
+    console.log('[CustomerRegister] DOMContentLoaded fired!');
     new CustomerRegister();
   });
 } else {
+  console.log('[CustomerRegister] DOM already loaded, initializing now...');
   new CustomerRegister();
 }
 
