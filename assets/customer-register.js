@@ -18,23 +18,39 @@ class CustomerRegister {
 
   init() {
     console.log('[CustomerRegister] Attaching submit event listener...');
-    this.form.addEventListener('submit', this.handleSubmit.bind(this));
+    
+    // Remove the form action to prevent traditional submission
+    this.form.removeAttribute('action');
+    
+    // Attach event listener with capture phase for priority
+    const handleSubmitBound = this.handleSubmit.bind(this);
+    this.form.addEventListener('submit', handleSubmitBound, true);
+    
     console.log('[CustomerRegister] Ready! Form will submit via AJAX.');
   }
 
   handleSubmit(event) {
     console.log('[CustomerRegister] Form submitted! Preventing default...');
     event.preventDefault();
+    event.stopPropagation();
+    event.stopImmediatePropagation();
     
     // Clear previous messages
     this.hideMessage();
     
     // Get form data
     const formData = new FormData(this.form);
-    const firstName = formData.get('customer[first_name]');
-    const lastName = formData.get('customer[last_name]');
+    const firstName = formData.get('customer[first_name]') || '';
+    const lastName = formData.get('customer[last_name]') || '';
     const email = formData.get('customer[email]');
     const password = formData.get('customer[password]');
+
+    console.log('[CustomerRegister] Form data:', {
+      firstName: firstName,
+      lastName: lastName,
+      email: email,
+      hasPassword: !!password
+    });
 
     // Validate
     if (!email || !password) {
@@ -47,11 +63,14 @@ class CustomerRegister {
 
     // Submit via GraphQL
     this.createCustomer({
-      firstName,
-      lastName,
-      email,
-      password
+      firstName: firstName,
+      lastName: lastName,
+      email: email,
+      password: password
     });
+    
+    // Prevent any further form submission
+    return false;
   }
 
   async createCustomer(customerData) {
@@ -80,11 +99,17 @@ class CustomerRegister {
       input: {
         email: customerData.email,
         password: customerData.password,
-        firstName: customerData.firstName || '',
-        lastName: customerData.lastName || '',
+        firstName: customerData.firstName,
+        lastName: customerData.lastName,
         acceptsMarketing: false
       }
     };
+
+    console.log('[CustomerRegister] GraphQL variables:', {
+      email: variables.input.email,
+      firstName: variables.input.firstName,
+      lastName: variables.input.lastName
+    });
 
     try {
       // Get the storefront access token from the page
