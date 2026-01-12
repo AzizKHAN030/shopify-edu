@@ -58,47 +58,89 @@
     endfor
 
     # Try to get color swatch information from variant metafields
-    if is_color_option and variant_with_value != null
-      # Check for Shopify Product Taxonomy color swatch metafields
-      # Product Taxonomy stores color swatch data in variant metafields
-      # Try multiple possible metafield paths
-      if variant_with_value.metafields.shopify.color != blank
-        assign color_swatch_value = variant_with_value.metafields.shopify.color
-      elsif variant_with_value.metafields.shopify.color_swatch != blank
-        assign color_swatch_value = variant_with_value.metafields.shopify.color_swatch
-      elsif variant_with_value.metafields.custom.color_swatch != blank
-        assign color_swatch_value = variant_with_value.metafields.custom.color_swatch
-      elsif variant_with_value.metafields.custom.color != blank
-        assign color_swatch_value = variant_with_value.metafields.custom.color
+    # For Product Taxonomy, we need to check ALL variants with this color value
+    # to find the one with the swatch data
+    if is_color_option
+      # First, try to get from the matched variant
+      if variant_with_value != null
+        # Check for Shopify Product Taxonomy color swatch metafields
+        # Try multiple possible metafield paths
+        if variant_with_value.metafields.shopify.color != blank
+          assign color_swatch_value = variant_with_value.metafields.shopify.color
+        elsif variant_with_value.metafields.shopify.color_swatch != blank
+          assign color_swatch_value = variant_with_value.metafields.shopify.color_swatch
+        elsif variant_with_value.metafields.custom.color_swatch != blank
+          assign color_swatch_value = variant_with_value.metafields.custom.color_swatch
+        elsif variant_with_value.metafields.custom.color != blank
+          assign color_swatch_value = variant_with_value.metafields.custom.color
+        endif
       endif
       
-      # If we have a color swatch metafield, try to extract the hex color
-      # The metafield might be a JSON object, a string, or a color object
+      # If not found, check ALL variants with this color value
+      if color_swatch_value == blank
+        for variant in product.variants
+          # Check if this variant has the color value we're looking for
+          assign variant_has_color = false
+          if option.position == 1 and variant.option1 == value
+            assign variant_has_color = true
+          elsif option.position == 2 and variant.option2 == value
+            assign variant_has_color = true
+          elsif option.position == 3 and variant.option3 == value
+            assign variant_has_color = true
+          endif
+          
+          if variant_has_color
+            # Try all metafield paths
+            if variant.metafields.shopify.color != blank
+              assign color_swatch_value = variant.metafields.shopify.color
+              break
+            elsif variant.metafields.shopify.color_swatch != blank
+              assign color_swatch_value = variant.metafields.shopify.color_swatch
+              break
+            elsif variant.metafields.custom.color_swatch != blank
+              assign color_swatch_value = variant.metafields.custom.color_swatch
+              break
+            elsif variant.metafields.custom.color != blank
+              assign color_swatch_value = variant.metafields.custom.color
+              break
+            endif
+          endif
+        endfor
+      endif
+      
+      # Extract hex color from the metafield value
       if color_swatch_value != blank
+        # Product Taxonomy color swatch is typically an object with a 'value' property
+        # Try to access the value property first (most common structure)
+        if color_swatch_value.value != blank
+          assign color_hex = color_swatch_value.value
+        # Try 'color' property as alternative
+        elsif color_swatch_value.color != blank
+          assign color_hex = color_swatch_value.color
         # Check if it's already a hex color string
-        if color_swatch_value contains '#'
+        elsif color_swatch_value contains '#'
           assign color_parts = color_swatch_value | split: '#'
           if color_parts.size > 1
-            assign color_hex = '#' | append: color_parts[1] | split: ' ' | first | split: ',' | first | split: ';' | first
+            assign color_hex = '#' | append: color_parts[1] | split: ' ' | first | split: ',' | first | split: ';' | first | split: '"' | first
           else
             assign color_hex = color_swatch_value
           endif
-        # Check if it's a color object with a 'value' or 'color' property
-        elsif color_swatch_value.value != blank
-          assign color_hex = color_swatch_value.value
-        elsif color_swatch_value.color != blank
-          assign color_hex = color_swatch_value.color
+        # Try to use the value directly (might be a string)
         else
-          # Try to use the value directly
           assign color_hex = color_swatch_value
         endif
         
         # Ensure we have a valid hex color (starts with #)
         unless color_hex contains '#'
-          assign color_hex = '#' | append: color_hex
+          # Remove any whitespace and ensure it's a valid hex
+          assign color_hex_clean = color_hex | strip
+          if color_hex_clean != blank
+            assign color_hex = '#' | append: color_hex_clean
+          endif
         endunless
       else
         # Fallback: Try to get color from a color mapping for common colors
+        # Only use this if we couldn't find any metafield data
         assign color_name_lower = value | downcase | strip
         case color_name_lower
           when 'black'
@@ -121,31 +163,6 @@
             assign color_hex = '#CD7F32'
         endcase
       endif
-    endif
-    
-    # If we still don't have a color hex but it's a color option, try to find it from any variant
-    if is_color_option and color_hex == blank
-      for variant in product.variants
-        if variant.option1 == value or variant.option2 == value or variant.option3 == value
-          if variant.metafields.shopify.color != blank
-            assign color_swatch_value = variant.metafields.shopify.color
-            if color_swatch_value contains '#'
-              assign color_parts = color_swatch_value | split: '#'
-              if color_parts.size > 1
-                assign color_hex = '#' | append: color_parts[1] | split: ' ' | first | split: ',' | first | split: ';' | first
-              endif
-            elsif color_swatch_value.value != blank
-              assign color_hex = color_swatch_value.value
-            elsif color_swatch_value.color != blank
-              assign color_hex = color_swatch_value.color
-            endif
-            unless color_hex contains '#'
-              assign color_hex = '#' | append: color_hex
-            endunless
-            break
-          endif
-        endif
-      endfor
     endif
   -%}
 
