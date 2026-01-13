@@ -1,0 +1,145 @@
+{%- comment -%}
+  Renders care guide metaobject content
+  
+  Accepts:
+  - care_guide: {Object} Care guide metaobject
+  
+  Usage:
+  {% render 'care-guide', care_guide: product.metafields.custom.care_guide.value %}
+{%- endcomment -%}
+
+{%- if care_guide != blank -%}
+  <div class="care-guide">
+    {%- comment -%} Display metaobject title if available {%- endcomment -%}
+    {%- if care_guide.title != blank -%}
+      <h2 class="care-guide__title">{{ care_guide.title }}</h2>
+    {%- endif -%}
+    
+    {%- comment -%} Display metaobject description if available {%- endcomment -%}
+    {%- if care_guide.description != blank -%}
+      <div class="care-guide__description">
+        {%- if care_guide.description contains '<' -%}
+          {{ care_guide.description }}
+        {%- else -%}
+          <p>{{ care_guide.description }}</p>
+        {%- endif -%}
+      </div>
+    {%- endif -%}
+    
+    {%- comment -%} Access specific fields - adjust field names based on your metaobject definition {%- endcomment -%}
+    {%- if care_guide.washing_instructions != blank -%}
+      <div class="care-guide__field">
+        <h3 class="care-guide__field-title">Washing Instructions</h3>
+        <div class="care-guide__field-content">
+          {%- if care_guide.washing_instructions contains '<' -%}
+            {{ care_guide.washing_instructions }}
+          {%- else -%}
+            <p>{{ care_guide.washing_instructions }}</p>
+          {%- endif -%}
+        </div>
+      </div>
+    {%- endif -%}
+    
+    {%- if care_guide.drying_instructions != blank -%}
+      <div class="care-guide__field">
+        <h3 class="care-guide__field-title">Drying Instructions</h3>
+        <div class="care-guide__field-content">
+          {%- if care_guide.drying_instructions contains '<' -%}
+            {{ care_guide.drying_instructions }}
+          {%- else -%}
+            <p>{{ care_guide.drying_instructions }}</p>
+          {%- endif -%}
+        </div>
+      </div>
+    {%- endif -%}
+    
+    {%- if care_guide.ironing_instructions != blank -%}
+      <div class="care-guide__field">
+        <h3 class="care-guide__field-title">Ironing Instructions</h3>
+        <div class="care-guide__field-content">
+          {%- if care_guide.ironing_instructions contains '<' -%}
+            {{ care_guide.ironing_instructions }}
+          {%- else -%}
+            <p>{{ care_guide.ironing_instructions }}</p>
+          {%- endif -%}
+        </div>
+      </div>
+    {%- endif -%}
+    
+    {%- if care_guide.other_instructions != blank -%}
+      <div class="care-guide__field">
+        <h3 class="care-guide__field-title">Additional Care Instructions</h3>
+        <div class="care-guide__field-content">
+          {%- if care_guide.other_instructions contains '<' -%}
+            {{ care_guide.other_instructions }}
+          {%- else -%}
+            <p>{{ care_guide.other_instructions }}</p>
+          {%- endif -%}
+        </div>
+      </div>
+    {%- endif -%}
+    
+    {%- comment -%} Generic field access - try common field names {%- endcomment -%}
+    {%- assign field_names = 'washing,drying,ironing,bleaching,dry_cleaning,storage,special_instructions' | split: ',' -%}
+    {%- for field_name in field_names -%}
+      {%- assign field_key = field_name | append: '_instructions' -%}
+      {%- assign field_value = care_guide[field_key] -%}
+      {%- if field_value == blank -%}
+        {%- assign field_value = care_guide[field_name] -%}
+      {%- endif -%}
+      {%- if field_value != blank -%}
+        <div class="care-guide__field">
+          <h3 class="care-guide__field-title">{{ field_name | replace: '_', ' ' | capitalize }} Instructions</h3>
+          <div class="care-guide__field-content">
+            {%- if field_value contains '<' -%}
+              {{ field_value }}
+            {%- else -%}
+              <p>{{ field_value }}</p>
+            {%- endif -%}
+          </div>
+        </div>
+      {%- endif -%}
+    {%- endfor -%}
+  </div>
+  
+  <style>
+    .care-guide {
+      padding: 1rem 0;
+    }
+    
+    .care-guide__field {
+      margin-bottom: 1.5rem;
+    }
+    
+    .care-guide__field:last-child {
+      margin-bottom: 0;
+    }
+    
+    .care-guide__field-title {
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+      color: rgba(var(--color-foreground), 0.9);
+    }
+    
+    .care-guide__field-content {
+      color: rgba(var(--color-foreground), 0.75);
+      line-height: 1.6;
+    }
+    
+    .care-guide__field-content p {
+      margin: 0;
+    }
+    
+    .care-guide__title {
+      font-size: 1.3rem;
+      font-weight: 600;
+      margin-bottom: 1rem;
+    }
+    
+    .care-guide__description {
+      margin-bottom: 1.5rem;
+      line-height: 1.6;
+    }
+  </style>
+{%- endif -%}

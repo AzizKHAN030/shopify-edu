@@ -56,6 +56,13 @@
             "text_style": "body"
           }
         },
+        "care_guide": {
+          "type": "care_guide",
+          "settings": {
+            "heading": "Care Guide",
+            "icon": "washing"
+          }
+        },
         "share": {
           "type": "share",
           "disabled": true,
@@ -73,6 +80,7 @@
         "buy_buttons",
         "description",
         "text_gEqtPq",
+        "care_guide",
         "share"
       ],
       "settings": {
